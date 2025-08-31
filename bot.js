@@ -498,14 +498,26 @@ bot.onText(/\/start/, async (msg) => {
   await bot.sendMessage(chatId, "Выберите действие:", {
     reply_markup: getStartKeyboard(),
   });
+  const userName = msg.from.first_name || null;
+
   try {
-    await axios.post("https://c2e30b93457050ae.mokky.dev/users-price", {
-      id_user: msg.from.id,
-      name: msg.from.first_name || null,
-    });
-    console.log(`User ${msg.from.id} saved to mock API`);
+    // Проверяем, есть ли уже пользователь
+    const existing = await axios.get(
+      `https://c2e30b93457050ae.mokky.dev/users-price?user_id=${userId}`
+    );
+
+    if (!existing.data || existing.data.length === 0) {
+      // Пользователя нет — добавляем
+      await axios.post("https://c2e30b93457050ae.mokky.dev/users-price", {
+        user_id: userId,
+        name: userName,
+      });
+      console.log(`User ${userId} saved to mock API`);
+    } else {
+      console.log(`User ${userId} already exists in mock API`);
+    }
   } catch (err) {
-    console.error("Ошибка при сохранении пользователя:", err.message);
+    console.error("Ошибка при проверке/сохранении пользователя:", err.message);
   }
 });
 
