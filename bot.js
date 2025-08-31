@@ -259,6 +259,7 @@ function formatProductInfo(product) {
 }
 
 // Создание главной клавиатуры
+// Создание главной клавиатуры
 function getStartKeyboard() {
   return {
     inline_keyboard: [
@@ -268,6 +269,7 @@ function getStartKeyboard() {
         { text: "📊 Статистика", callback_data: "statistics" },
         { text: "⚙️ Настройки", callback_data: "settings" },
       ],
+      [{ text: "🔍 Найти товар", url: "https://t.me/search_wb_ozon_bot" }], // Новая кнопка
       [{ text: "ℹ️ Помощь", callback_data: "help" }],
     ],
   };
@@ -494,13 +496,21 @@ bot.on("callback_query", async (callbackQuery) => {
     // Добавление отслеживания
     if (data === "add_tracking") {
       await bot.editMessageText(
-        "📦 **Добавление отслеживания**\n\nВведите артикул товара:",
+        "📦 **Добавление отслеживания**\n\nВведите артикул товара:\n\n💡 Не знаете артикул? Воспользуйтесь ботом поиска товаров - найдите нужный товар, скопируйте артикул и вернитесь сюда!",
         {
           chat_id: chatId,
           message_id: msg.message_id,
           parse_mode: "Markdown",
           reply_markup: {
-            inline_keyboard: [[{ text: "❌ Отмена", callback_data: "cancel" }]],
+            inline_keyboard: [
+              [
+                {
+                  text: "🔍 Найти товар",
+                  url: "https://t.me/search_wb_ozon_bot",
+                },
+              ],
+              [{ text: "❌ Отмена", callback_data: "cancel" }],
+            ],
           },
         }
       );
