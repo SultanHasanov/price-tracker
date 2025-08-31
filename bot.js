@@ -2,7 +2,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const axios = require("axios");
 
 // Настройки
-const BOT_TOKEN = "8190479365:AAHnjDWn6sr_8SF6Cj_jw7HR2-Cu1fM_syA"; // Замените на ваш токен бота
+const BOT_TOKEN = "8353683466:AAGXDOv_OjBs5BIdITVuAmF71sFoe2We29I"; // Замените на ваш токен бота
 const API_KEY = "XGXVQZX24QKQ3YGL";
 const API_BASE = "https://api.moneyplace.io";
 const MOKKY_API = "https://e957a177cfe4e411.mokky.dev";
