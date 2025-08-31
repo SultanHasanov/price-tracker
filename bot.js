@@ -38,17 +38,16 @@ const PERIODS = {
   "12h": { seconds: 43200, name: "12 часов" },
 };
 
-    // Добавляем новое состояние
+// Добавляем новое состояние
 const STATES = {
-    IDLE: 'idle',
-    WAITING_ARTICLE: 'waiting_article',
-    SELECTING_MARKETPLACE: 'selecting_marketplace',
-    SELECTING_PERIOD: 'selecting_period',
-    SELECTING_NOTIFICATION: 'selecting_notification',
-    EDITING_PERIOD: 'editing_period',
-    EDITING_NOTIFY: 'editing_notify' // Добавляем это
+  IDLE: "idle",
+  WAITING_ARTICLE: "waiting_article",
+  SELECTING_MARKETPLACE: "selecting_marketplace",
+  SELECTING_PERIOD: "selecting_period",
+  SELECTING_NOTIFICATION: "selecting_notification",
+  EDITING_PERIOD: "editing_period",
+  EDITING_NOTIFY: "editing_notify", // Добавляем это
 };
-
 
 // Класс для отслеживания задач
 class TrackingTask {
@@ -395,20 +394,17 @@ function getTaskActionsKeyboard(trackingId, isActive) {
 
   keyboard.push([
     { text: "🔄 Проверить сейчас", callback_data: `check_${trackingId}` },
-    { text: "📊 История", callback_data: `history_${trackingId}` },
+    { text: "✏️ Изменить период", callback_data: `edit_period_${trackingId}` },
   ]);
 
   keyboard.push([
-    { text: "✏️ Изменить период", callback_data: `edit_period_${trackingId}` },
     {
       text: "🔔 Настройки уведомлений",
       callback_data: `edit_notify_${trackingId}`,
     },
-  ]);
-
-  keyboard.push([
     { text: "🗑️ Удалить", callback_data: `delete_${trackingId}` },
   ]);
+
   keyboard.push([{ text: "🔙 К списку", callback_data: "list_tracking" }]);
 
   return { inline_keyboard: keyboard };
@@ -418,14 +414,6 @@ function getTaskActionsKeyboard(trackingId, isActive) {
 function getSettingsKeyboard() {
   return {
     inline_keyboard: [
-      [
-        {
-          text: "🔔 Глобальные уведомления",
-          callback_data: "toggle_global_notifications",
-        },
-      ],
-      [{ text: "🕒 Тихие часы", callback_data: "quiet_hours" }],
-      [{ text: "📱 Формат уведомлений", callback_data: "notification_format" }],
       [{ text: "💾 Экспорт данных", callback_data: "export_data" }],
       [{ text: "🔙 Назад", callback_data: "back_to_main" }],
     ],
@@ -465,10 +453,10 @@ async function loadTrackingsToCache() {
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
- const firstName = msg.from.first_name || 'пользователь';
+  const firstName = msg.from.first_name || "пользователь";
   await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
 
- const text = `🤖 **Добро пожаловать, ${firstName}, в бот отслеживания цен!**
+  const text = `🤖 **Добро пожаловать, ${firstName}, в бот отслеживания цен!**
 
 Этот бот поможет вам отслеживать изменения цен на товары в маркетплейсах Wildberries и Ozon.
 
@@ -612,129 +600,146 @@ bot.on("callback_query", async (callbackQuery) => {
     }
 
     // Выбор типа уведомлений
-   // Обработчик выбора типа уведомлений
-else if (data === 'notify_changes' || data === 'notify_always') {
-    const notifyAlways = data === 'notify_always';
-    const userState = await MokkyAPI.getUserState(userId);
-    
-    // РЕДАКТИРОВАНИЕ существующего отслеживания
-    if (userState.state === STATES.EDITING_NOTIFY && userState.trackingId) {
+    // Обработчик выбора типа уведомлений
+    else if (data === "notify_changes" || data === "notify_always") {
+      const notifyAlways = data === "notify_always";
+      const userState = await MokkyAPI.getUserState(userId);
+
+      // РЕДАКТИРОВАНИЕ существующего отслеживания
+      if (userState.state === STATES.EDITING_NOTIFY && userState.trackingId) {
         // Обновляем настройки уведомлений
         await MokkyAPI.updateTracking(userState.trackingId, {
-            notifyAlways: notifyAlways,
-            updatedAt: new Date().toISOString()
+          notifyAlways: notifyAlways,
+          updatedAt: new Date().toISOString(),
         });
-        
-        const notifyText = notifyAlways ? 'всегда' : 'только при изменении цены';
-        
+
+        const notifyText = notifyAlways
+          ? "всегда"
+          : "только при изменении цены";
+
         // Получаем обновленное отслеживание
-        const updatedTracking = await MokkyAPI.getTracking(userState.trackingId);
+        const updatedTracking = await MokkyAPI.getTracking(
+          userState.trackingId
+        );
         if (updatedTracking) {
-            const mpInfo = MARKETPLACES[updatedTracking.marketplace];
-            const periodName = Object.values(PERIODS).find(p => p.seconds === updatedTracking.periodSeconds)?.name || 'Неизвестно';
-            const status = updatedTracking.active ? '🟢 Активно' : '🔴 Остановлено';
-            
-            let infoText = `✅ **Настройки уведомлений обновлены!**\n\n`;
-            infoText += `📦 Товар: ${updatedTracking.productName}\n`;
-            infoText += `🏪 Маркетплейс: ${mpInfo.emoji} ${mpInfo.name}\n`;
-            infoText += `📋 Артикул: \`${updatedTracking.article}\`\n`;
-            infoText += `⏱️ Период: ${periodName}\n`;
-            infoText += `🔔 Уведомления: ${notifyText}\n`;
-            infoText += `📈 Статус: ${status}\n`;
-            
-            await bot.editMessageText(infoText, {
-                chat_id: chatId,
-                message_id: msg.message_id,
-                parse_mode: 'Markdown',
-                reply_markup: getTaskActionsKeyboard(userState.trackingId, updatedTracking.active)
-            });
+          const mpInfo = MARKETPLACES[updatedTracking.marketplace];
+          const periodName =
+            Object.values(PERIODS).find(
+              (p) => p.seconds === updatedTracking.periodSeconds
+            )?.name || "Неизвестно";
+          const status = updatedTracking.active
+            ? "🟢 Активно"
+            : "🔴 Остановлено";
+
+          let infoText = `✅ **Настройки уведомлений обновлены!**\n\n`;
+          infoText += `📦 Товар: ${updatedTracking.productName}\n`;
+          infoText += `🏪 Маркетплейс: ${mpInfo.emoji} ${mpInfo.name}\n`;
+          infoText += `📋 Артикул: \`${updatedTracking.article}\`\n`;
+          infoText += `⏱️ Период: ${periodName}\n`;
+          infoText += `🔔 Уведомления: ${notifyText}\n`;
+          infoText += `📈 Статус: ${status}\n`;
+
+          await bot.editMessageText(infoText, {
+            chat_id: chatId,
+            message_id: msg.message_id,
+            parse_mode: "Markdown",
+            reply_markup: getTaskActionsKeyboard(
+              userState.trackingId,
+              updatedTracking.active
+            ),
+          });
         }
-        
+
         // ВАЖНО: Сбрасываем состояние ПОСЛЕ редактирования
         await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
         return; // Прерываем выполнение, чтобы не перейти к созданию нового
-    }
-    
-    // СОЗДАНИЕ нового отслеживания (оригинальный код)
-    else if (userState.state === STATES.SELECTING_NOTIFICATION) {
-        await bot.editMessageText('🔍 Проверяю товар...', {
-            chat_id: chatId,
-            message_id: msg.message_id,
-            parse_mode: 'Markdown'
+      }
+
+      // СОЗДАНИЕ нового отслеживания (оригинальный код)
+      else if (userState.state === STATES.SELECTING_NOTIFICATION) {
+        await bot.editMessageText("🔍 Проверяю товар...", {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "Markdown",
         });
-        
-        const product = await makeApiRequest(userState.article, userState.marketplace);
+
+        const product = await makeApiRequest(
+          userState.article,
+          userState.marketplace
+        );
         if (!product) {
-            await bot.editMessageText(
-                '❌ **Ошибка!**\n\nТовар с указанным артикулом не найден.\n\nПопробуйте еще раз.',
-                {
-                    chat_id: chatId,
-                    message_id: msg.message_id,
-                    parse_mode: 'Markdown',
-                    reply_markup: getStartKeyboard()
-                }
-            );
-            await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
-            return;
+          await bot.editMessageText(
+            "❌ **Ошибка!**\n\nТовар с указанным артикулом не найден.\n\nПопробуйте еще раз.",
+            {
+              chat_id: chatId,
+              message_id: msg.message_id,
+              parse_mode: "Markdown",
+              reply_markup: getStartKeyboard(),
+            }
+          );
+          await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
+          return;
         }
-        
+
         // Создаем отслеживание в Mokky
         const trackingData = {
-            userId: userId,
-            article: userState.article,
-            marketplace: userState.marketplace,
-            periodSeconds: userState.periodSeconds,
-            notifyAlways: notifyAlways,
-            lastPrice: product.real_price,
-            lastCheck: new Date().toISOString(),
-            active: true,
-            productName: product.name || 'Неизвестный товар',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+          userId: userId,
+          article: userState.article,
+          marketplace: userState.marketplace,
+          periodSeconds: userState.periodSeconds,
+          notifyAlways: notifyAlways,
+          lastPrice: product.real_price,
+          lastCheck: new Date().toISOString(),
+          active: true,
+          productName: product.name || "Неизвестный товар",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
-        
+
         const savedTracking = await MokkyAPI.createTracking(trackingData);
         if (!savedTracking) {
-            await bot.editMessageText('❌ Ошибка при сохранении отслеживания', {
-                chat_id: chatId,
-                message_id: msg.message_id,
-                reply_markup: getStartKeyboard()
-            });
-            return;
+          await bot.editMessageText("❌ Ошибка при сохранении отслеживания", {
+            chat_id: chatId,
+            message_id: msg.message_id,
+            reply_markup: getStartKeyboard(),
+          });
+          return;
         }
-        
+
         const mpInfo = MARKETPLACES[userState.marketplace];
         const periodInfo = PERIODS[userState.period];
-        const notifyText = notifyAlways ? 'всегда' : 'только при изменении цены';
-        
-        const successText = `✅ **Отслеживание добавлено!**\n\n` +
-            `📦 Товар: ${product.name || 'Неизвестный товар'}\n` +
-            `🏪 Маркетплейс: ${mpInfo.emoji} ${mpInfo.name}\n` +
-            `📋 Артикул: \`${userState.article}\`\n` +
-            `⏱️ Период проверки: ${periodInfo.name}\n` +
-            `🔔 Уведомления: ${notifyText}\n` +
-            `💰 Текущая цена: **${formatPrice(product.real_price || 0)}**\n\n` +
-            `🚀 Отслеживание запущено!`;
-        
+        const notifyText = notifyAlways
+          ? "всегда"
+          : "только при изменении цены";
+
+        const successText =
+          `✅ **Отслеживание добавлено!**\n\n` +
+          `📦 Товар: ${product.name || "Неизвестный товар"}\n` +
+          `🏪 Маркетплейс: ${mpInfo.emoji} ${mpInfo.name}\n` +
+          `📋 Артикул: \`${userState.article}\`\n` +
+          `⏱️ Период проверки: ${periodInfo.name}\n` +
+          `🔔 Уведомления: ${notifyText}\n` +
+          `💰 Текущая цена: **${formatPrice(product.real_price || 0)}**\n\n` +
+          `🚀 Отслеживание запущено!`;
+
         await bot.editMessageText(successText, {
-            chat_id: chatId,
-            message_id: msg.message_id,
-            parse_mode: 'Markdown',
-            reply_markup: getStartKeyboard()
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "Markdown",
+          reply_markup: getStartKeyboard(),
         });
-        
+
         await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
-    }
-    else {
+      } else {
         // Неизвестное состояние - сбрасываем
         await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
-        await bot.editMessageText('❌ Произошла ошибка. Попробуйте снова.', {
-            chat_id: chatId,
-            message_id: msg.message_id,
-            reply_markup: getStartKeyboard()
+        await bot.editMessageText("❌ Произошла ошибка. Попробуйте снова.", {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          reply_markup: getStartKeyboard(),
         });
+      }
     }
-}
     // Список отслеживаний
     else if (data === "list_tracking") {
       const keyboard = await getTrackingListKeyboard(userId);
@@ -997,11 +1002,6 @@ else if (data === 'notify_changes' || data === 'notify_always') {
       }
     }
 
-
-
-
-    
-
     // Статистика
     else if (data === "statistics") {
       const userTrackings = await MokkyAPI.getUserTrackings(userId);
@@ -1050,104 +1050,121 @@ else if (data === 'notify_changes' || data === 'notify_always') {
       });
     }
 
+    // Обработка изменения уведомлений
+    else if (data.startsWith("edit_notify_")) {
+      const trackingId = data.replace("edit_notify_", "");
+      const tracking = await MokkyAPI.getTracking(trackingId);
 
-
-// Обработка изменения уведомлений
-else if (data.startsWith('edit_notify_')) {
-    const trackingId = data.replace('edit_notify_', '');
-    const tracking = await MokkyAPI.getTracking(trackingId);
-    
-    if (!tracking) {
-        await bot.answerCallbackQuery(callbackQuery.id, { text: '❌ Отслеживание не найдено' });
+      if (!tracking) {
+        await bot.answerCallbackQuery(callbackQuery.id, {
+          text: "❌ Отслеживание не найдено",
+        });
         return;
-    }
-    
-    // Сохраняем ID отслеживания
-    await MokkyAPI.saveUserState(userId, { 
-        state: STATES.EDITING_NOTIFY, 
-        trackingId: trackingId 
-    });
-    
-    const mpInfo = MARKETPLACES[tracking.marketplace];
-    const currentNotify = tracking.notifyAlways ? '📢 Всегда уведомлять' : '🔔 Только при изменении цены';
-    
-    await bot.editMessageText(
+      }
+
+      // Сохраняем ID отслеживания
+      await MokkyAPI.saveUserState(userId, {
+        state: STATES.EDITING_NOTIFY,
+        trackingId: trackingId,
+      });
+
+      const mpInfo = MARKETPLACES[tracking.marketplace];
+      const currentNotify = tracking.notifyAlways
+        ? "📢 Всегда уведомлять"
+        : "🔔 Только при изменении цены";
+
+      await bot.editMessageText(
         `📦 Товар: ${tracking.productName}\n🏪 ${mpInfo.emoji} ${mpInfo.name}\n\n🔔 Текущие настройки: ${currentNotify}\n\nВыберите новый тип уведомлений:`,
         {
-            chat_id: chatId,
-            message_id: msg.message_id,
-            parse_mode: 'Markdown',
-            reply_markup: getNotificationKeyboard()
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "Markdown",
+          reply_markup: getNotificationKeyboard(),
         }
-    );
-}
+      );
+    }
 
-// Обновляем обработчик выбора уведомлений
-else if (data === 'notify_changes' || data === 'notify_always') {
-    const notifyAlways = data === 'notify_always';
-    const userState = await MokkyAPI.getUserState(userId);
-    
-    // Если это редактирование существующего отслеживания
-    if (userState.state === STATES.EDITING_NOTIFY && userState.trackingId) {
+    // Обновляем обработчик выбора уведомлений
+    else if (data === "notify_changes" || data === "notify_always") {
+      const notifyAlways = data === "notify_always";
+      const userState = await MokkyAPI.getUserState(userId);
+
+      // Если это редактирование существующего отслеживания
+      if (userState.state === STATES.EDITING_NOTIFY && userState.trackingId) {
         // Обновляем настройки уведомлений
         await MokkyAPI.updateTracking(userState.trackingId, {
-            notifyAlways: notifyAlways,
-            updatedAt: new Date().toISOString()
+          notifyAlways: notifyAlways,
+          updatedAt: new Date().toISOString(),
         });
-        
-        const notifyText = notifyAlways ? 'всегда' : 'только при изменении цены';
-        
+
+        const notifyText = notifyAlways
+          ? "всегда"
+          : "только при изменении цены";
+
         // Получаем обновленное отслеживание для показа информации
-        const updatedTracking = await MokkyAPI.getTracking(userState.trackingId);
+        const updatedTracking = await MokkyAPI.getTracking(
+          userState.trackingId
+        );
         if (updatedTracking) {
-            const mpInfo = MARKETPLACES[updatedTracking.marketplace];
-            const periodName = Object.values(PERIODS).find(p => p.seconds === updatedTracking.periodSeconds)?.name || 'Неизвестно';
-            const status = updatedTracking.active ? '🟢 Активно' : '🔴 Остановлено';
-            
-            let infoText = `✅ **Настройки уведомлений обновлены!**\n\n`;
-            infoText += `📦 Товар: ${updatedTracking.productName}\n`;
-            infoText += `🏪 Маркетплейс: ${mpInfo.emoji} ${mpInfo.name}\n`;
-            infoText += `📋 Артикул: \`${updatedTracking.article}\`\n`;
-            infoText += `⏱️ Период: ${periodName}\n`;
-            infoText += `🔔 Уведомления: ${notifyText}\n`;
-            infoText += `📈 Статус: ${status}\n`;
-            
-            await bot.editMessageText(infoText, {
-                chat_id: chatId,
-                message_id: msg.message_id,
-                parse_mode: 'Markdown',
-                reply_markup: getTaskActionsKeyboard(userState.trackingId, updatedTracking.active)
-            });
+          const mpInfo = MARKETPLACES[updatedTracking.marketplace];
+          const periodName =
+            Object.values(PERIODS).find(
+              (p) => p.seconds === updatedTracking.periodSeconds
+            )?.name || "Неизвестно";
+          const status = updatedTracking.active
+            ? "🟢 Активно"
+            : "🔴 Остановлено";
+
+          let infoText = `✅ **Настройки уведомлений обновлены!**\n\n`;
+          infoText += `📦 Товар: ${updatedTracking.productName}\n`;
+          infoText += `🏪 Маркетплейс: ${mpInfo.emoji} ${mpInfo.name}\n`;
+          infoText += `📋 Артикул: \`${updatedTracking.article}\`\n`;
+          infoText += `⏱️ Период: ${periodName}\n`;
+          infoText += `🔔 Уведомления: ${notifyText}\n`;
+          infoText += `📈 Статус: ${status}\n`;
+
+          await bot.editMessageText(infoText, {
+            chat_id: chatId,
+            message_id: msg.message_id,
+            parse_mode: "Markdown",
+            reply_markup: getTaskActionsKeyboard(
+              userState.trackingId,
+              updatedTracking.active
+            ),
+          });
         }
-        
+
         await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
         return;
-    }
-    
-    // Оригинальный код для создания нового отслеживания
-    await bot.editMessageText('🔍 Проверяю товар...', {
+      }
+
+      // Оригинальный код для создания нового отслеживания
+      await bot.editMessageText("🔍 Проверяю товар...", {
         chat_id: chatId,
         message_id: msg.message_id,
-        parse_mode: 'Markdown'
-    });
-    
-    const product = await makeApiRequest(userState.article, userState.marketplace);
-    if (!product) {
+        parse_mode: "Markdown",
+      });
+
+      const product = await makeApiRequest(
+        userState.article,
+        userState.marketplace
+      );
+      if (!product) {
         await bot.editMessageText(
-            '❌ **Ошибка!**\n\nТовар с указанным артикулом не найден.\n\nПопробуйте еще раз.',
-            {
-                chat_id: chatId,
-                message_id: msg.message_id,
-                parse_mode: 'Markdown',
-                reply_markup: getStartKeyboard()
-            }
+          "❌ **Ошибка!**\n\nТовар с указанным артикулом не найден.\n\nПопробуйте еще раз.",
+          {
+            chat_id: chatId,
+            message_id: msg.message_id,
+            parse_mode: "Markdown",
+            reply_markup: getStartKeyboard(),
+          }
         );
         await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
         return;
-    }
-    
-    // Создаем отслеживание в Mokky
-    const trackingData = {
+      }
+
+      // Создаем отслеживание в Mokky
+      const trackingData = {
         userId: userId,
         article: userState.article,
         marketplace: userState.marketplace,
@@ -1156,43 +1173,44 @@ else if (data === 'notify_changes' || data === 'notify_always') {
         lastPrice: product.real_price,
         lastCheck: new Date().toISOString(),
         active: true,
-        productName: product.name || 'Неизвестный товар',
+        productName: product.name || "Неизвестный товар",
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-    };
-    
-    const savedTracking = await MokkyAPI.createTracking(trackingData);
-    if (!savedTracking) {
-        await bot.editMessageText('❌ Ошибка при сохранении отслеживания', {
-            chat_id: chatId,
-            message_id: msg.message_id,
-            reply_markup: getStartKeyboard()
+        updatedAt: new Date().toISOString(),
+      };
+
+      const savedTracking = await MokkyAPI.createTracking(trackingData);
+      if (!savedTracking) {
+        await bot.editMessageText("❌ Ошибка при сохранении отслеживания", {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          reply_markup: getStartKeyboard(),
         });
         return;
-    }
-    
-    const mpInfo = MARKETPLACES[userState.marketplace];
-    const periodInfo = PERIODS[userState.period];
-    const notifyText = notifyAlways ? 'всегда' : 'только при изменении цены';
-    
-    const successText = `✅ **Отслеживание добавлено!**\n\n` +
-        `📦 Товар: ${product.name || 'Неизвестный товар'}\n` +
+      }
+
+      const mpInfo = MARKETPLACES[userState.marketplace];
+      const periodInfo = PERIODS[userState.period];
+      const notifyText = notifyAlways ? "всегда" : "только при изменении цены";
+
+      const successText =
+        `✅ **Отслеживание добавлено!**\n\n` +
+        `📦 Товар: ${product.name || "Неизвестный товар"}\n` +
         `🏪 Маркетплейс: ${mpInfo.emoji} ${mpInfo.name}\n` +
         `📋 Артикул: \`${userState.article}\`\n` +
         `⏱️ Период проверки: ${periodInfo.name}\n` +
         `🔔 Уведомления: ${notifyText}\n` +
         `💰 Текущая цена: **${formatPrice(product.real_price || 0)}**\n\n` +
         `🚀 Отслеживание запущено!`;
-    
-    await bot.editMessageText(successText, {
+
+      await bot.editMessageText(successText, {
         chat_id: chatId,
         message_id: msg.message_id,
-        parse_mode: 'Markdown',
-        reply_markup: getStartKeyboard()
-    });
-    
-    await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
-}
+        parse_mode: "Markdown",
+        reply_markup: getStartKeyboard(),
+      });
+
+      await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
+    }
 
     // Настройки
     else if (data === "settings") {
@@ -1292,7 +1310,11 @@ else if (data === 'notify_changes' || data === 'notify_always') {
 **💡 Советы:**
 • Используйте массовые операции для управления множеством отслеживаний
 • Регулярно проверяйте статистику
-• Экспортируйте данные для резервного копирования`;
+• Экспортируйте данные для резервного копирования
+
+**💁 Нужна помощь?**
+• Если остались вопросы - напишите нашему администратору!
+`;
 
       await bot.editMessageText(helpText, {
         chat_id: chatId,
@@ -1300,6 +1322,12 @@ else if (data === 'notify_changes' || data === 'notify_always') {
         parse_mode: "Markdown",
         reply_markup: {
           inline_keyboard: [
+            [
+              {
+                text: "👨💻 Написать админу",
+                url: "https://t.me/sult987",
+              },
+            ],
             [{ text: "🔙 Назад", callback_data: "back_to_main" }],
           ],
         },
