@@ -500,7 +500,7 @@ bot.onText(/\/start/, async (msg) => {
   });
   try {
     await axios.post("https://c2e30b93457050ae.mokky.dev/users-price", {
-      id: msg.from.id,
+      id_user: msg.from.id,
       name: msg.from.first_name || null,
     });
     console.log(`User ${msg.from.id} saved to mock API`);
