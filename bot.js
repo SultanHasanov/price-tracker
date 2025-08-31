@@ -489,14 +489,15 @@ bot.onText(/\/start/, async (msg) => {
 
 Выберите действие:`;
 
-  bot.sendMessage(chatId, text, {
+  await bot.sendMessage(chatId, text, {
     parse_mode: "Markdown",
     reply_markup: getMainReplyKeyboard(),
   });
-});
 
-bot.sendMessage(chatId, "Выберите действие:", {
-  reply_markup: getStartKeyboard(),
+  // Отправляем второе сообщение с inline клавиатурой
+  await bot.sendMessage(chatId, "Выберите действие:", {
+    reply_markup: getStartKeyboard(),
+  });
 });
 
 // Обработчик callback запросов
