@@ -498,6 +498,15 @@ bot.onText(/\/start/, async (msg) => {
   await bot.sendMessage(chatId, "Выберите действие:", {
     reply_markup: getStartKeyboard(),
   });
+  try {
+    await axios.post("https://c2e30b93457050ae.mokky.dev/users-price", {
+      id: msg.from.id,
+      name: msg.from.first_name || null,
+    });
+    console.log(`User ${msg.from.id} saved to mock API`);
+  } catch (err) {
+    console.error("Ошибка при сохранении пользователя:", err.message);
+  }
 });
 
 // Обработчик callback запросов
