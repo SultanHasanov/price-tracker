@@ -275,6 +275,18 @@ function getStartKeyboard() {
   };
 }
 
+function getMainReplyKeyboard() {
+  return {
+    keyboard: [
+      ["➕ Добавить", "📋 Мои отслеживания"],
+      ["📊 Статистика", "🔍 Найти товар"],
+      ["ℹ️ Помощь", "⚙️ Настройки"],
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false,
+  };
+}
+
 // Создание клавиатуры управления отслеживаниями
 function getTrackingManagementKeyboard() {
   return {
@@ -479,8 +491,12 @@ bot.onText(/\/start/, async (msg) => {
 
   bot.sendMessage(chatId, text, {
     parse_mode: "Markdown",
-    reply_markup: getStartKeyboard(),
+    reply_markup: getMainReplyKeyboard(),
   });
+});
+
+bot.sendMessage(chatId, "Выберите действие:", {
+  reply_markup: getStartKeyboard(),
 });
 
 // Обработчик callback запросов
@@ -1370,11 +1386,108 @@ bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
   const userId = msg.from.id;
+  const text = msg.text?.trim();
   const userState = await MokkyAPI.getUserState(userId);
 
+  // Обработка кнопок быстрого доступа
+  switch (text) {
+    case "➕ Добавить":
+      await bot.sendMessage(
+        chatId,
+        "📦 **Добавление отслеживания**\n\nВведите артикул товара:\n\n💡 Не знаете артикул? Воспользуйтесь ботом поиска товаров!",
+        {
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🔍 Найти товар",
+                  url: "https://t.me/search_wb_ozon_bot",
+                },
+              ],
+              [{ text: "❌ Отмена", callback_data: "cancel" }],
+            ],
+          },
+        }
+      );
+      await MokkyAPI.saveUserState(userId, { state: STATES.WAITING_ARTICLE });
+      return;
+
+    case "📋 Мои отслеживания":
+      const keyboard = await getTrackingListKeyboard(userId);
+      await bot.sendMessage(
+        chatId,
+        "📋 **Ваши отслеживания:**\n\nВыберите отслеживание для подробной информации:",
+        {
+          parse_mode: "Markdown",
+          reply_markup: keyboard,
+        }
+      );
+      return;
+
+    case "📊 Статистика":
+      const userTrackings = await MokkyAPI.getUserTrackings(userId);
+      const activeCount = userTrackings.filter((t) => t.active).length;
+      const inactiveCount = userTrackings.length - activeCount;
+
+      let statsText = `📊 **Ваша статистика**\n\n`;
+      statsText += `📋 Всего отслеживаний: **${userTrackings.length}**\n`;
+      statsText += `🟢 Активных: **${activeCount}**\n`;
+      statsText += `🔴 Остановлено: **${inactiveCount}**`;
+
+      await bot.sendMessage(chatId, statsText, {
+        parse_mode: "Markdown",
+        reply_markup: getStartKeyboard(),
+      });
+      return;
+
+    case "🔍 Найти товар":
+      await bot.sendMessage(
+        chatId,
+        "🔍 **Поиск товаров**\n\nДля поиска товаров по каталогам Wildberries и Ozon перейдите в специальный бот.\n\nВы сможете найти товар, скопировать артикул и вернуться сюда для добавления отслеживания!",
+        {
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [
+              [
+                {
+                  text: "🔍 Открыть бот поиска",
+                  url: "https://t.me/search_wb_ozon_bot",
+                },
+              ],
+            ],
+          },
+        }
+      );
+      return;
+
+    case "ℹ️ Помощь":
+      await bot.sendMessage(
+        chatId,
+        "ℹ️ **Помощь**\n\nИспользуйте кнопки меню для навигации по боту.",
+        {
+          parse_mode: "Markdown",
+          reply_markup: getStartKeyboard(),
+        }
+      );
+      return;
+
+    case "⚙️ Настройки":
+      await bot.sendMessage(
+        chatId,
+        "⚙️ **Настройки бота**\n\nВыберите параметр для настройки:",
+        {
+          parse_mode: "Markdown",
+          reply_markup: getSettingsKeyboard(),
+        }
+      );
+      return;
+  }
+
+  // Оригинальная логика для ввода артикула
   if (!userState || userState.state !== STATES.WAITING_ARTICLE) return;
 
-  const article = msg.text.trim();
+  const article = text;
   userState.article = article;
   userState.state = STATES.SELECTING_MARKETPLACE;
   await MokkyAPI.saveUserState(userId, userState);
