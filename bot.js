@@ -477,7 +477,7 @@ async function loadTrackingsToCache() {
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
-
+ const firstName = msg.from.first_name || 'пользователь';
   await MokkyAPI.saveUserState(userId, { state: STATES.IDLE });
 
   const text = `🤖 **Добро пожаловать, ${firstName}, в бот отслеживания цен!**
