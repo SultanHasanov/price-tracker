@@ -2,10 +2,10 @@
   "name": "price-tracker-telegram-bot",
   "version": "1.0.0",
   "description": "Telegram bot for tracking prices on Wildberries and Ozon marketplaces",
-  "main": "script.js",
+  "main": "bot.js",
   "scripts": {
-    "start": "node script.js",
-    "dev": "nodemon script.js"
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
   },
   "keywords": [
     "telegram",
