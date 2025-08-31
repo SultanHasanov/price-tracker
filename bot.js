@@ -499,26 +499,33 @@ bot.onText(/\/start/, async (msg) => {
     reply_markup: getStartKeyboard(),
   });
   const userName = msg.from.first_name || null;
-
+const userNickname = msg.from.username || null;
   try {
-    // Проверяем, есть ли уже пользователь
-    const existing = await axios.get(
-      `https://c2e30b93457050ae.mokky.dev/users-price?user_id=${userId}`
-    );
+  const existing = await axios.get(
+    `https://c2e30b93457050ae.mokky.dev/users-price?user_id=${userId}`
+  );
 
-    if (!existing.data || existing.data.length === 0) {
-      // Пользователя нет — добавляем
-      await axios.post("https://c2e30b93457050ae.mokky.dev/users-price", {
-        user_id: userId,
-        name: userName,
-      });
-      console.log(`User ${userId} saved to mock API`);
-    } else {
-      console.log(`User ${userId} already exists in mock API`);
-    }
-  } catch (err) {
-    console.error("Ошибка при проверке/сохранении пользователя:", err.message);
+  const userData = {
+    name: userName,
+    nickname: userNickname,
+  };
+
+  if (!existing.data || existing.data.length === 0) {
+    // Пользователя нет — добавляем
+    await axios.post("https://c2e30b93457050ae.mokky.dev/users-price", {
+      user_id: userId,
+      ...userData,
+    });
+    console.log(`User ${userId} saved to mock API`);
+  } else {
+    // Пользователь есть — обновляем данные
+    const id = existing.data[0].id; // предполагается, что API возвращает id записи
+    await axios.patch(`https://c2e30b93457050ae.mokky.dev/users-price/${id}`, userData);
+    console.log(`User ${userId} updated in mock API`);
   }
+} catch (err) {
+  console.error("Ошибка при проверке/сохранении пользователя:", err.message);
+}
 });
 
 // Обработчик callback запросов
