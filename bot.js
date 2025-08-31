@@ -492,31 +492,20 @@ bot.on("callback_query", async (callbackQuery) => {
     await bot.answerCallbackQuery(callbackQuery.id);
 
     // Добавление отслеживания
-    // Обработчик callback запросов (секция add_tracking)
-if (data === "add_tracking") {
-  await bot.editMessageText(
-    "📦 **Добавление отслеживания**\n\nВведите артикул товара:\n\n*Если хотите найти товар, перейдите в бота:* @search_wb_ozon_bot",
-    {
-      chat_id: chatId,
-      message_id: msg.message_id,
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: "🔍 Найти товар в боте",
-              url: "https://t.me/search_wb_ozon_bot"
-            }
-          ],
-          [
-            { text: "❌ Отмена", callback_data: "cancel" }
-          ]
-        ],
-      },
+    if (data === "add_tracking") {
+      await bot.editMessageText(
+        "📦 **Добавление отслеживания**\n\nВведите артикул товара:",
+        {
+          chat_id: chatId,
+          message_id: msg.message_id,
+          parse_mode: "Markdown",
+          reply_markup: {
+            inline_keyboard: [[{ text: "❌ Отмена", callback_data: "cancel" }]],
+          },
+        }
+      );
+      await MokkyAPI.saveUserState(userId, { state: STATES.WAITING_ARTICLE });
     }
-  );
-  await MokkyAPI.saveUserState(userId, { state: STATES.WAITING_ARTICLE });
-}
 
     // Обработка изменения периода
     else if (data.startsWith("edit_period_")) {
